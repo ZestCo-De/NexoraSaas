@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <title>Nexora — Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet"/>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --fire:#FF4B1F;--ink:#0A0A0F;--paper:#F4F1EB;--white:#fff;
+      --muted:#8A8A96;--border:rgba(10,10,15,.10);--up:#22C55E;
+      --warn:#F97316;--blue:#1C6EFF;
+      --font-d:'Syne',sans-serif;--font-b:'DM Sans',sans-serif;
+      --r-md:8px;--r-lg:12px;--r-xl:18px;
+      --topbar-h:52px;--bottom-nav-h:64px;
+    }
+    html,body,#root{min-height:100%;font-family:var(--font-b);background:var(--paper);color:var(--ink);overflow-x:hidden}
+    button{font-family:var(--font-b);cursor:pointer;-webkit-tap-highlight-color:transparent}
+    a{-webkit-tap-highlight-color:transparent}
+    ::-webkit-scrollbar{width:4px;height:4px}
+    ::-webkit-scrollbar-track{background:transparent}
+    ::-webkit-scrollbar-thumb{background:rgba(10,10,15,.15);border-radius:99px}
+
+    /* ── OVERLAY & MODAL ── */
+    .overlay{position:fixed;inset:0;background:rgba(10,10,15,.52);z-index:400;display:flex;align-items:center;justify-content:center;padding:16px;animation:fadeIn .2s ease}
+    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+    .modal{background:var(--white);border-radius:var(--r-xl);width:100%;max-height:88vh;overflow-y:auto;animation:slideUp .25s cubic-bezier(.16,1,.3,1)}
+    @keyframes slideUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+
+    /* ── TOPBAR ── */
+    .topbar{
+      position:sticky;top:0;z-index:200;
+      background:var(--white);border-bottom:1px solid var(--border);
+      display:flex;align-items:center;justify-content:space-between;
+      padding:0 20px;height:var(--topbar-h);
+    }
+    .topbar-left{display:flex;align-items:center;gap:20px}
+    .logo{font-family:var(--font-d);font-size:17px;font-weight:800;color:var(--ink);cursor:default;user-select:none}
+    .logo span{color:var(--fire)}
+    .nav-links{display:flex;gap:2px}
+    .nav-btn{font-size:12px;font-weight:500;padding:6px 12px;border-radius:var(--r-md);border:none;background:transparent;color:var(--muted);transition:background .15s,color .15s;white-space:nowrap}
+    .nav-btn:hover,.nav-btn.active{background:var(--paper);color:var(--ink)}
+    .topbar-right{display:flex;align-items:center;gap:8px}
+    .icon-btn{width:36px;height:36px;border-radius:var(--r-md);border:1px solid var(--border);background:transparent;display:flex;align-items:center;justify-content:center;color:var(--muted);position:relative;transition:background .15s;flex-shrink:0}
+    .icon-btn:hover{background:var(--paper)}
+    .notif-dot{position:absolute;top:7px;right:7px;width:7px;height:7px;border-radius:50%;background:var(--fire);border:2px solid var(--white)}
+    @keyframes ring{0%,100%{transform:rotate(0)}15%{transform:rotate(16deg)}30%{transform:rotate(-13deg)}45%{transform:rotate(10deg)}60%{transform:rotate(-7deg)}75%{transform:rotate(4deg)}}
+    .notif-ring{animation:ring .65s ease}
+    .upgrade-btn{background:var(--fire);color:#fff;border:none;border-radius:var(--r-md);padding:8px 16px;font-size:12px;font-weight:600;white-space:nowrap;transition:opacity .15s}
+    .upgrade-btn:hover{opacity:.88}
+    .avatar-btn{width:36px;height:36px;border-radius:50%;background:var(--fire);border:none;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;transition:box-shadow .2s}
+    .avatar-btn:hover{box-shadow:0 0 0 3px rgba(255,75,31,.22)}
+    .hamburger{display:none;flex-direction:column;justify-content:center;gap:5px;width:36px;height:36px;border:none;background:transparent;padding:6px;border-radius:var(--r-md)}
+    .hamburger span{display:block;height:2px;background:var(--ink);border-radius:99px;transition:all .25s}
+
+    /* ── DRAWER ── */
+    .drawer-backdrop{position:fixed;inset:0;background:rgba(10,10,15,.4);z-index:300;animation:fadeIn .2s ease}
+    .drawer{position:fixed;top:0;left:0;bottom:0;width:76vw;max-width:280px;background:var(--white);z-index:301;display:flex;flex-direction:column;animation:drawerIn .28s cubic-bezier(.16,1,.3,1);box-shadow:20px 0 60px rgba(10,10,15,.12)}
+    @keyframes drawerIn{from{transform:translateX(-100%)}to{transform:translateX(0)}}
+    .drawer-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border)}
+    .drawer-close{width:32px;height:32px;border:1px solid var(--border);border-radius:var(--r-md);background:transparent;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--muted)}
+    .drawer-nav{padding:12px;display:flex;flex-direction:column;gap:2px;flex:1;overflow-y:auto}
+    .drawer-btn{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:var(--r-md);border:none;background:transparent;color:var(--muted);font-size:14px;font-weight:500;text-align:left;width:100%;transition:background .15s,color .15s}
+    .drawer-btn:hover,.drawer-btn.active{background:var(--paper);color:var(--ink)}
+    .drawer-btn .d-ico{font-size:16px;width:20px;text-align:center}
+    .drawer-footer{padding:16px;border-top:1px solid var(--border)}
+    .drawer-user{display:flex;align-items:center;gap:10px;padding:12px;background:var(--paper);border-radius:var(--r-lg)}
+    .drawer-av{width:36px;height:36px;border-radius:50%;background:var(--fire);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0}
+    .drawer-name{font-size:13px;font-weight:600;color:var(--ink)}
+    .drawer-email{font-size:11px;color:var(--muted)}
+
+    /* ── USER DROPDOWN ── */
+    .user-dropdown{position:absolute;top:44px;right:0;background:var(--white);border:1px solid var(--border);border-radius:var(--r-lg);width:230px;box-shadow:0 12px 40px rgba(10,10,15,.13);overflow:hidden;animation:slideUp .2s ease;z-index:250}
+    .user-header{padding:16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+    .user-av-lg{width:38px;height:38px;border-radius:50%;background:var(--fire);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0}
+    .user-name{font-size:13px;font-weight:600;color:var(--ink)}
+    .user-email{font-size:11px;color:var(--muted);margin-top:1px}
+    .dd-item{display:flex;align-items:center;gap:10px;padding:11px 16px;font-size:13px;color:var(--ink);border:none;background:transparent;width:100%;text-align:left;transition:background .15s}
+    .dd-item:hover{background:var(--paper)}
+    .dd-item.danger{color:#E24B4A}
+    .dd-item.danger:hover{background:#FEF2F2}
+    .dd-sep{height:1px;background:var(--border);margin:4px 0}
+
+    /* ── HERO ── */
+    .hero-band{background:#0A0A0F;padding:48px 28px 40px;text-align:center;position:relative;overflow:hidden}
+    .hero-glow{position:absolute;top:-80px;left:50%;transform:translateX(-50%);width:600px;height:280px;background:radial-gradient(ellipse,rgba(255,75,31,.2) 0%,transparent 68%);pointer-events:none}
+    .hero-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.11);border-radius:99px;padding:5px 14px;font-size:11px;color:rgba(255,255,255,.5);letter-spacing:.06em;margin-bottom:14px;position:relative}
+    .badge-dot{width:5px;height:5px;border-radius:50%;background:var(--fire)}
+    .hero-title{font-family:var(--font-d);font-size:clamp(26px,5vw,40px);font-weight:800;color:#fff;line-height:1.08;margin-bottom:10px;position:relative}
+    .hero-title em{font-style:normal;color:var(--fire)}
+    .hero-sub{font-size:14px;color:rgba(255,255,255,.38);margin-bottom:24px;position:relative;font-weight:300;line-height:1.6}
+    .hero-btns{display:flex;gap:8px;justify-content:center;position:relative;flex-wrap:wrap}
+    .hbtn-p{background:var(--fire);color:#fff;border:none;border-radius:var(--r-md);padding:11px 26px;font-size:13px;font-weight:600;transition:opacity .15s}
+    .hbtn-p:hover{opacity:.88}
+    .hbtn-g{background:rgba(255,255,255,.08);color:rgba(255,255,255,.8);border:1px solid rgba(255,255,255,.15);border-radius:var(--r-md);padding:11px 20px;font-size:13px;transition:background .15s}
+    .hbtn-g:hover{background:rgba(255,255,255,.15)}
+
+    /* ── METRICS ROW ── */
+    .metrics-row{
+      background:var(--white);
+      border-bottom:1px solid var(--border);
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+    }
+    .metric{padding:18px 22px;border-right:1px solid var(--border);transition:background .2s;min-width:0}
+    .metric:last-child{border-right:none}
+    .metric:hover{background:var(--paper)}
+    .metric-label{font-size:10px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .metric-val{font-family:var(--font-d);font-size:clamp(20px,2.6vw,28px);font-weight:800;color:var(--ink);line-height:1;margin-bottom:5px}
+    .metric-chg{font-size:11px;font-weight:500;display:flex;align-items:center;gap:3px}
+    .metric-icon{width:32px;height:32px;border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;font-size:14px;margin-bottom:12px;flex-shrink:0}
+    .up{color:var(--up)}.dn{color:var(--warn)}
+
+    /* ── BODY GRID ── */
+    .body-wrap{display:grid;grid-template-columns:1fr 290px;gap:16px;padding:16px;max-width:1440px;margin:0 auto}
+    .col-left,.col-right{display:flex;flex-direction:column;gap:16px}
+
+    /* ── CARD ── */
+    .card{background:var(--white);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px 20px;min-width:0;overflow:hidden}
+    .card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+    .card-title{font-size:13px;font-weight:600;color:var(--ink)}
+    .card-tag{font-size:11px;color:var(--muted);background:var(--paper);border-radius:var(--r-md);padding:3px 9px}
+    .card-tag-green{background:rgba(34,197,94,.1);color:var(--up)}
+
+    /* ── BAR CHART ── */
+    .bar-chart{display:flex;align-items:flex-end;gap:3px;height:88px}
+    .bc{flex:1;border-radius:3px 3px 0 0;background:var(--paper);min-height:6px;transition:opacity .2s;cursor:pointer}
+    .bc:hover{opacity:.68}.bc.hi{background:var(--fire)}.bc.mid{background:rgba(255,75,31,.30)}
+    .bar-labels{display:flex;justify-content:space-between;margin-top:6px}
+    .bar-labels span{font-size:10px;color:var(--muted)}
+
+    /* ── LINE CHART ── */
+    .line-chart-wrap{width:100%;overflow:hidden}
+    .line-chart-wrap canvas{display:block;max-width:100%}
+
+    /* ── FUNNEL ── */
+    .funnel-rows{display:flex;flex-direction:column;gap:10px}
+    .funnel-track{height:6px;background:var(--paper);border-radius:99px;overflow:hidden;margin-top:5px}
+    .funnel-fill{height:100%;border-radius:99px;background:var(--fire);transition:width .9s cubic-bezier(.16,1,.3,1)}
+
+    /* ── KPI ── */
+    .kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .kpi{background:var(--paper);border-radius:var(--r-md);padding:14px;transition:background .2s}
+    .kpi:hover{background:#EAE7E0}
+    .kpi-label{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+    .kpi-val{font-family:var(--font-d);font-size:20px;font-weight:800;color:var(--ink)}
+    .kpi-sub{font-size:11px;margin-top:2px}
+
+    /* ── DONUT ── */
+    .donut-wrap{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+    .donut-svg{flex-shrink:0;width:88px;height:88px}
+    .donut-legend{display:flex;flex-direction:column;gap:9px;flex:1;min-width:120px}
+    .leg-row{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink)}
+    .leg-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+    .leg-pct{font-weight:600;margin-left:auto}
+
+    /* ── PAGES & ACTIVITY ── */
+    .page-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+    .page-row:last-child{border-bottom:none}
+    .page-rank{font-size:11px;color:var(--muted);font-weight:600;width:14px;flex-shrink:0}
+    .page-name{font-size:12px;color:var(--ink);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+    .page-views{font-size:12px;font-weight:600;color:var(--ink);flex-shrink:0}
+    .page-chg{font-size:11px;font-weight:500;min-width:42px;text-align:right;flex-shrink:0}
+    .act-row{display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-bottom:1px solid var(--border)}
+    .act-row:last-child{border-bottom:none}
+    .act-ico{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+    .act-title{font-size:12px;color:var(--ink);line-height:1.45}
+    .act-time{font-size:11px;color:var(--muted);margin-top:2px}
+
+    /* ── TOOLTIP ── */
+    .tip{position:fixed;background:var(--ink);color:var(--paper);border-radius:var(--r-md);padding:6px 10px;font-size:11px;pointer-events:none;opacity:0;transition:opacity .12s;z-index:300;white-space:nowrap}
+    .tip.on{opacity:1}
+
+    /* ── BOTTOM NAV ── */
+    .bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;height:var(--bottom-nav-h);background:var(--white);border-top:1px solid var(--border);z-index:200;padding:0 8px;padding-bottom:env(safe-area-inset-bottom)}
+    .bottom-nav-inner{display:flex;align-items:center;justify-content:space-around;height:100%}
+    .bnav-btn{display:flex;flex-direction:column;align-items:center;gap:3px;border:none;background:transparent;padding:6px 12px;border-radius:var(--r-md);color:var(--muted);transition:color .15s;flex:1;min-width:0}
+    .bnav-btn.active{color:var(--fire)}
+    .bnav-btn svg{flex-shrink:0}
+    .bnav-label{font-size:10px;font-weight:500;white-space:nowrap}
+    .bnav-spacer{display:none;height:var(--bottom-nav-h)}
+
+    /* ── MODALS ── */
+    .upg-modal{max-width:700px}
+    .modal-hdr{padding:28px 28px 0;display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+    .modal-close{width:34px;height:34px;border-radius:50%;border:1px solid var(--border);background:transparent;display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--muted);line-height:1;flex-shrink:0;transition:background .15s}
+    .modal-close:hover{background:var(--paper)}
+    .modal-ttl{font-family:var(--font-d);font-size:22px;font-weight:800;color:var(--ink);margin-bottom:4px}
+    .modal-sub{font-size:13px;color:var(--muted);font-weight:300}
+    .plans-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:24px 28px 28px}
+    .plan-card{border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;transition:transform .2s;background:var(--white)}
+    .plan-card:hover{transform:translateY(-2px)}
+    .plan-card.featured{border:2px solid var(--fire)}
+    .plan-badge{display:inline-block;background:var(--fire);color:#fff;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:3px 9px;border-radius:var(--r-md);margin-bottom:12px}
+    .plan-name{font-family:var(--font-d);font-size:16px;font-weight:800;color:var(--ink);margin-bottom:4px}
+    .plan-price{font-family:var(--font-d);font-size:30px;font-weight:800;color:var(--ink);margin-bottom:2px}
+    .plan-price span{font-size:13px;font-weight:400;color:var(--muted)}
+    .plan-desc{font-size:12px;color:var(--muted);margin-bottom:16px;font-weight:300;line-height:1.55}
+    .plan-feats{list-style:none;display:flex;flex-direction:column;gap:8px;margin-bottom:20px}
+    .plan-feat{display:flex;align-items:flex-start;gap:7px;font-size:12px;color:var(--ink);line-height:1.4}
+    .plan-feat::before{content:'✓';color:var(--up);font-weight:700;flex-shrink:0}
+    .plan-btn{width:100%;border:none;border-radius:var(--r-md);padding:11px;font-size:13px;font-weight:600;font-family:var(--font-b);transition:opacity .15s}
+    .plan-btn.prim{background:var(--fire);color:#fff}
+    .plan-btn.prim:hover{opacity:.88}
+    .plan-btn.outl{background:transparent;border:1px solid var(--border);color:var(--ink)}
+    .plan-btn.outl:hover{background:var(--paper)}
+
+    /* ── FEATURES MODAL ── */
+    .feat-modal{max-width:720px}
+    .feat-hero{background:#0A0A0F;padding:36px 28px 32px;position:relative;overflow:hidden;border-radius:var(--r-xl) var(--r-xl) 0 0}
+    .feat-glow{position:absolute;top:-60px;left:50%;transform:translateX(-50%);width:500px;height:200px;background:radial-gradient(ellipse,rgba(255,75,31,.18) 0%,transparent 68%);pointer-events:none}
+    .feat-close{position:absolute;top:16px;right:16px;width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;font-size:20px;color:rgba(255,255,255,.6);line-height:1;transition:background .15s}
+    .feat-close:hover{background:rgba(255,255,255,.15)}
+    .feat-ttl{font-family:var(--font-d);font-size:clamp(20px,3vw,30px);font-weight:800;color:#fff;margin-bottom:6px;position:relative}
+    .feat-ttl em{font-style:normal;color:var(--fire)}
+    .feat-sub{font-size:13px;color:rgba(255,255,255,.38);font-weight:300;position:relative}
+    .feats-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:24px 28px 28px}
+    .feat-item{border:1px solid var(--border);border-radius:var(--r-lg);padding:18px;transition:border-color .2s,background .2s}
+    .feat-item:hover{border-color:rgba(255,75,31,.35);background:#FFF9F7}
+    .feat-icon{width:36px;height:36px;border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;font-size:16px;margin-bottom:12px}
+    .feat-item-ttl{font-family:var(--font-d);font-size:14px;font-weight:700;color:var(--ink);margin-bottom:6px}
+    .feat-item-desc{font-size:12px;color:var(--muted);line-height:1.55;font-weight:300}
+
+    /* ── NOTIF MODAL ── */
+    .notif-modal{max-width:400px;align-self:flex-start;margin-top:60px}
+    .notif-list{padding-bottom:8px}
+    .notif-item{display:flex;align-items:flex-start;gap:12px;padding:14px 20px;border-bottom:1px solid var(--border);transition:background .15s;cursor:pointer}
+    .notif-item:hover{background:var(--paper)}
+    .notif-item:last-child{border-bottom:none}
+    .notif-item.unread{background:#FFF9F7}
+    .n-dot{width:6px;height:6px;border-radius:50%;margin-top:5px;flex-shrink:0}
+    .n-dot.on{background:var(--fire)}
+    .n-title{font-size:12px;font-weight:600;color:var(--ink);margin-bottom:2px}
+    .n-desc{font-size:11px;color:var(--muted);line-height:1.5}
+    .n-time{font-size:10px;color:var(--muted);margin-top:3px}
+
+    /* ════════════════════════════════════
+       RESPONSIVE — TABLET ≤ 1024px
+    ════════════════════════════════════ */
+    @media(max-width:1024px){
+      .body-wrap{grid-template-columns:1fr}
+      .col-right{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+      .col-right .kpi-grid{grid-column:1/-1}
+    }
+
+    /* ════════════════════════════════════
+       RESPONSIVE — TABLET ≤ 768px
+    ════════════════════════════════════ */
+    @media(max-width:768px){
+      .nav-links{display:none}
+      .upgrade-btn{display:none}
+      .hamburger{display:flex}
+      .col-right{grid-template-columns:1fr}
+      .plans-grid{grid-template-columns:1fr}
+      .feats-grid{grid-template-columns:1fr}
+      .notif-modal{margin-top:0;align-self:center;max-width:100%}
+      .upg-modal,.feat-modal{max-width:100%}
+
+      .metrics-row{
+        display:flex;
+        overflow-x:auto;
+        -webkit-overflow-scrolling:touch;
+        scroll-snap-type:x mandatory;
+        border-bottom:1px solid var(--border);
+      }
+      .metrics-row::-webkit-scrollbar{display:none}
+      .metric{flex:0 0 200px;scroll-snap-align:start;border-right:1px solid var(--border);border-bottom:none}
+      .metric:last-child{border-right:1px solid var(--border)}
+    }
+
+    /* ════════════════════════════════════
+       RESPONSIVE — MOBILE ≤ 480px
+    ════════════════════════════════════ */
+    @media(max-width:480px){
+      :root{--topbar-h:50px}
+      .topbar{padding:0 14px}
+      .logo{font-size:16px}
+      .topbar .icon-btn{display:none}
+
+      /* hero */
+      .hero-band{padding:32px 16px 28px}
+      .hero-btns{flex-direction:column;align-items:stretch;gap:10px;padding:0 8px}
+      .hbtn-p,.hbtn-g{padding:13px;font-size:14px;text-align:center}
+
+      /* metrics: 2×2 grid */
+      .metrics-row{
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        overflow-x:unset;
+        scroll-snap-type:none;
+        border-bottom:1px solid var(--border);
+      }
+      .metric{
+        flex:unset;
+        scroll-snap-align:unset;
+        padding:14px 16px;
+        border-right:1px solid var(--border);
+        border-bottom:1px solid var(--border);
+      }
+      .metric:nth-child(3),.metric:nth-child(4){border-bottom:none}
+      .metric:nth-child(2),.metric:nth-child(4){border-right:none}
+      .metric-label{font-size:9px;margin-bottom:5px}
+      .metric-val{font-size:22px}
+      .metric-chg{font-size:10px}
+
+      /* body */
+      .body-wrap{padding:12px;gap:12px}
+      .card{padding:14px 16px}
+
+      /* ── CHARTS RESPONSIVOS ── */
+      /* Bar chart: menos barras visíveis, gaps menores */
+      .bar-chart{gap:2px;height:72px}
+      .bc{min-height:4px}
+      .bar-labels span{font-size:9px}
+
+      /* Funnel: texto menor */
+      .funnel-rows{gap:8px}
+      .funnel-rows span{font-size:11px !important}
+
+      /* Donut: empilha vertical em telas pequenas */
+      .donut-wrap{flex-direction:column;align-items:flex-start;gap:14px}
+      .donut-svg{width:72px;height:72px}
+      .donut-legend{width:100%;min-width:unset}
+      .leg-row{font-size:11px}
+
+      /* KPI grid */
+      .kpi-grid{gap:8px}
+      .kpi{padding:12px}
+      .kpi-val{font-size:18px}
+
+      /* Pages table: hide rank col on very small */
+      .page-rank{display:none}
+      .page-name{font-size:11px}
+      .page-views{font-size:11px}
+      .page-chg{font-size:10px;min-width:36px}
+
+      /* Activity: smaller icon */
+      .act-ico{width:28px;height:28px;font-size:12px}
+      .act-title{font-size:11px}
+      .act-time{font-size:10px}
+
+      /* modals bottom-sheet */
+      .overlay{align-items:flex-end;padding:0}
+      .modal{border-radius:var(--r-xl) var(--r-xl) 0 0;max-height:92vh}
+      .modal-hdr{padding:20px 18px 0}
+      .plans-grid{padding:16px 18px 20px;gap:10px}
+      .feats-grid{padding:16px 18px 20px;gap:10px}
+      .feat-hero{padding:28px 18px 24px;border-radius:var(--r-xl) var(--r-xl) 0 0}
+
+      /* bottom nav */
+      .bottom-nav{display:flex}
+      .bnav-spacer{display:block}
+    }
+
+    /* ════════════════════════════════════
+       RESPONSIVE — TINY ≤ 360px
+    ════════════════════════════════════ */
+    @media(max-width:360px){
+      .metrics-row{grid-template-columns:1fr}
+      .metric{border-right:none;border-bottom:1px solid var(--border)}
+      .metric:last-child{border-bottom:none}
+      /* reset overrides from 480px for single col */
+      .metric:nth-child(2),.metric:nth-child(4){border-right:none;border-bottom:1px solid var(--border)}
+      .metric:nth-child(3){border-bottom:1px solid var(--border)}
+      .metric:last-child{border-bottom:none}
+
+      .kpi-grid{grid-template-columns:1fr 1fr}
+      .bar-chart{gap:1px;height:60px}
+
+      /* donut centralizado */
+      .donut-wrap{align-items:center}
+    }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+/* ─── DATA ─── */
+const BAR_DATA=[28,38,32,48,36,56,44,60,52,72,58,80,55,86,68,94,76,64,84,100];
+const LINE_PTS=[72,85,78,92,105,128];
+const LINE_LBL=['Jun','Jul','Aug','Sep','Oct','Nov'];
+const FUNNEL=[
+  {name:'Visited landing page',pct:100},
+  {name:'Started sign-up',pct:74},
+  {name:'Completed onboarding',pct:58},
+  {name:'Activated feature',pct:42},
+  {name:'Converted to paid',pct:18},
+];
+const PAGES=[
+  {rank:1,name:'/dashboard',  views:'3,241',chg:'+9%', up:true},
+  {rank:2,name:'/onboarding', views:'2,180',chg:'+62%',up:true},
+  {rank:3,name:'/pricing',    views:'1,890',chg:'+24%',up:true},
+  {rank:4,name:'/features',   views:'1,204',chg:'−3%', up:false},
+  {rank:5,name:'/signup',     views:'987',  chg:'+38%',up:true},
+];
+const ACTIVITY=[
+  {ico:'↑',bg:'rgba(255,75,31,.12)',  col:'#FF4B1F',title:'Conversion goal reached — 4.38%',  time:'2 min ago'},
+  {ico:'+',bg:'rgba(34,197,94,.12)',  col:'#22C55E',title:'New user signed up via /pricing',   time:'14 min ago'},
+  {ico:'★',bg:'rgba(28,110,255,.12)', col:'#1C6EFF',title:'NPS survey — score 9 received',    time:'1 hr ago'},
+  {ico:'↗',bg:'rgba(138,138,150,.12)',col:'#8A8A96',title:'Weekly report generated',           time:'3 hr ago'},
+];
+const PLANS=[
+  {name:'Starter',price:'$29',per:'/mo',desc:'For small teams exploring analytics for the first time.',
+   features:['Up to 5 users','10K events/month','3 dashboards','Email reports','7-day retention'],
+   btn:'Get started',style:'outl',featured:false},
+  {name:'Pro',price:'$79',per:'/mo',desc:'For growing teams that need deeper insights and real-time data.',
+   features:['Up to 25 users','500K events/month','Unlimited dashboards','Conversion funnels','90-day retention','Priority support'],
+   btn:'Upgrade to Pro',style:'prim',featured:true,badge:'Most popular'},
+  {name:'Enterprise',price:'$249',per:'/mo',desc:'Full power for large organizations with custom requirements.',
+   features:['Unlimited users','Unlimited events','Custom integrations','SSO & audit logs','Custom retention','Dedicated CSM'],
+   btn:'Contact sales',style:'outl',featured:false},
+];
+const FEATURES=[
+  {icon:'📊',bg:'rgba(255,75,31,.10)',title:'Real-time analytics',   desc:'Live event tracking with sub-second latency. Watch conversions happen as they unfold.'},
+  {icon:'🎯',bg:'rgba(34,197,94,.10)',title:'Conversion funnels',    desc:'Map every step of the user journey and pinpoint exactly where drop-off happens.'},
+  {icon:'📩',bg:'rgba(28,110,255,.10)',title:'Automated reports',    desc:'Schedule beautiful PDF reports delivered to stakeholders every Monday morning.'},
+  {icon:'⚡',bg:'rgba(255,189,46,.10)',title:'Smart alerts',         desc:'Get notified the moment a KPI crosses a threshold — before a blip becomes a crisis.'},
+  {icon:'🔗',bg:'rgba(138,138,150,.10)',title:'Native integrations', desc:'Connects with Stripe, HubSpot, Intercom, Zapier, Slack, and 40+ tools out of the box.'},
+  {icon:'🛡',bg:'rgba(99,102,241,.10)',title:'Privacy-first design', desc:'GDPR, CCPA and SOC 2 Type II compliant. Your data stays yours — always.'},
+];
+const NOTIFS_INIT=[
+  {id:1,title:'Conversion milestone hit',desc:'Your conversion rate passed 4% for the first time.',time:'Just now',unread:true},
+  {id:2,title:'New team member joined',  desc:'Sara Chen accepted your invitation to Nexora.',     time:'1 hr ago', unread:true},
+  {id:3,title:'Weekly report ready',     desc:'Your Q4 weekly summary is ready to download.',      time:'3 hr ago', unread:true},
+  {id:4,title:'Funnel update deployed',  desc:'Onboarding funnel redesign has gone live.',          time:'Yesterday',unread:false},
+  {id:5,title:'Usage at 80%',            desc:"You've used 80% of your monthly event quota.",       time:'2 days ago',unread:false},
+];
+const NAV_ITEMS=[
+  {label:'Dashboard',ico:(<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="1" y="1" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.4"/><rect x="10" y="1" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.4"/><rect x="1" y="10" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.4"/><rect x="10" y="10" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.4"/></svg>)},
+  {label:'Analytics',ico:(<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><polyline points="1,13 5,8 9,10 13,4 17,7" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" strokeLinecap="round"/></svg>)},
+  {label:'Funnels',  ico:(<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M1 3h16l-6 7v5l-4-2V10L1 3Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/></svg>)},
+  {label:'Reports',  ico:(<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="2" y="1" width="14" height="16" rx="2" stroke="currentColor" strokeWidth="1.4"/><line x1="5" y1="6" x2="13" y2="6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/><line x1="5" y1="9" x2="13" y2="9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/><line x1="5" y1="12" x2="9" y2="12" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>)},
+  {label:'Settings', ico:(<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="2.5" stroke="currentColor" strokeWidth="1.4"/><path d="M9 1v2M9 15v2M1 9h2M15 9h2M3.22 3.22l1.42 1.42M13.36 13.36l1.42 1.42M3.22 14.78l1.42-1.42M13.36 4.64l1.42-1.42" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>)},
+];
+
+/* ─── COUNTER HOOK ─── */
+function useCounter(target,fmt,dur=1300){
+  const [val,setVal]=useState(fmt(0));
+  const done=useRef(false), ref=useRef(null);
+  useEffect(()=>{
+    const el=ref.current; if(!el) return;
+    const obs=new IntersectionObserver(([e])=>{
+      if(e.isIntersecting&&!done.current){
+        done.current=true;
+        const s=performance.now();
+        const tick=now=>{
+          const p=Math.min((now-s)/dur,1),ease=1-Math.pow(1-p,3);
+          setVal(fmt(ease*target));
+          if(p<1) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      }
+    },{threshold:.3});
+    obs.observe(el); return()=>obs.disconnect();
+  },[]);
+  return [val,ref];
+}
+
+/* ─── LINE CHART ─── */
+function LineChart(){
+  const wrapRef=useRef(null);
+  const canvasRef=useRef(null);
+  const draw=useCallback(()=>{
+    const wrap=wrapRef.current; const c=canvasRef.current;
+    if(!c||!wrap) return;
+    const dpr=window.devicePixelRatio||1;
+    const W=wrap.offsetWidth;
+    const H=Math.max(90, Math.min(110, W * 0.28)); // height adapts to width
+    c.width=W*dpr; c.height=H*dpr;
+    c.style.width=W+'px'; c.style.height=H+'px';
+    const ctx=c.getContext('2d'); ctx.scale(dpr,dpr);
+    const isSmall=W<300;
+    const pad={t:8,r:isSmall?4:10,b:26,l:isSmall?32:44},cw=W-pad.l-pad.r,ch=H-pad.t-pad.b;
+    const mn=55,mx=140,px=i=>pad.l+(i/(LINE_PTS.length-1))*cw,py=v=>pad.t+ch-((v-mn)/(mx-mn))*ch;
+    ctx.strokeStyle='rgba(10,10,15,.06)'; ctx.lineWidth=1;
+    [.25,.5,.75,1].forEach(f=>{const y=pad.t+ch*f;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(pad.l+cw,y);ctx.stroke();});
+    const g=ctx.createLinearGradient(0,pad.t,0,pad.t+ch);
+    g.addColorStop(0,'rgba(255,75,31,.16)'); g.addColorStop(1,'rgba(255,75,31,0)');
+    ctx.beginPath(); ctx.moveTo(px(0),py(LINE_PTS[0]));
+    LINE_PTS.forEach((v,i)=>{if(i>0)ctx.lineTo(px(i),py(v));});
+    ctx.lineTo(px(LINE_PTS.length-1),pad.t+ch); ctx.lineTo(px(0),pad.t+ch); ctx.closePath();
+    ctx.fillStyle=g; ctx.fill();
+    ctx.beginPath(); ctx.moveTo(px(0),py(LINE_PTS[0]));
+    LINE_PTS.forEach((v,i)=>{if(i>0)ctx.lineTo(px(i),py(v));});
+    ctx.strokeStyle='#FF4B1F'; ctx.lineWidth=2.5; ctx.lineJoin='round'; ctx.stroke();
+    const fs=isSmall?9:11;
+    ctx.font=`${fs}px 'DM Sans',sans-serif`; ctx.fillStyle='rgba(10,10,15,.38)';
+    ctx.textAlign='center'; LINE_LBL.forEach((l,i)=>ctx.fillText(l,px(i),H-4));
+    ctx.textAlign='right';
+    [70,90,110,130].forEach(v=>{const y=py(v);if(y>=pad.t&&y<=pad.t+ch)ctx.fillText('$'+v+'K',pad.l-6,y+4);});
+    LINE_PTS.forEach((v,i)=>{const r=isSmall?3:4.5;ctx.beginPath();ctx.arc(px(i),py(v),r,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();ctx.strokeStyle='#FF4B1F';ctx.lineWidth=2;ctx.stroke();});
+  },[]);
+
+  useEffect(()=>{
+    draw();
+    const ro=new ResizeObserver(draw);
+    if(wrapRef.current) ro.observe(wrapRef.current);
+    return()=>ro.disconnect();
+  },[draw]);
+
+  return(
+    <div ref={wrapRef} className="line-chart-wrap">
+      <canvas ref={canvasRef}/>
+    </div>
+  );
+}
+
+/* ─── DONUT ─── */
+function DonutChart(){
+  const segs=[{v:42,c:'#FF4B1F'},{v:28,c:'#1C6EFF'},{v:18,c:'#22C55E'},{v:12,c:'#8A8A96'}];
+  let ang=-Math.PI/2;
+  const paths=segs.map(s=>{
+    const a=(s.v/100)*Math.PI*2,r=36,inn=22,cx=44,cy=44;
+    const x1=cx+r*Math.cos(ang),y1=cy+r*Math.sin(ang),x2=cx+r*Math.cos(ang+a),y2=cy+r*Math.sin(ang+a);
+    const ix1=cx+inn*Math.cos(ang),iy1=cy+inn*Math.sin(ang),ix2=cx+inn*Math.cos(ang+a),iy2=cy+inn*Math.sin(ang+a);
+    const lg=a>Math.PI?1:0;
+    const d=`M${x1},${y1} A${r},${r} 0 ${lg},1 ${x2},${y2} L${ix2},${iy2} A${inn},${inn} 0 ${lg},0 ${ix1},${iy1} Z`;
+    ang+=a;
+    return <path key={s.c} d={d} fill={s.c}/>;
+  });
+  return(
+    <div className="donut-wrap">
+      <svg className="donut-svg" viewBox="0 0 88 88">{paths}</svg>
+      <div className="donut-legend">
+        {[['#FF4B1F','Organic','42%'],['#1C6EFF','Paid','28%'],['#22C55E','Referral','18%'],['#8A8A96','Direct','12%']].map(([c,l,p])=>(
+          <div className="leg-row" key={l}><span className="leg-dot" style={{background:c}}/>{l}<span className="leg-pct">{p}</span></div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ─── FUNNEL ─── */
+function Funnel(){
+  const [ready,setReady]=useState(false);
+  useEffect(()=>{const t=setTimeout(()=>setReady(true),200);return()=>clearTimeout(t);},[]);
+  return(
+    <div className="funnel-rows">
+      {FUNNEL.map(f=>(
+        <div key={f.name}>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:8}}>
+            <span style={{fontSize:12,color:'var(--ink)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',minWidth:0,flex:1}}>{f.name}</span>
+            <span style={{fontSize:12,fontWeight:600,color:'var(--ink)',flexShrink:0}}>{f.pct}%</span>
+          </div>
+          <div className="funnel-track"><div className="funnel-fill" style={{width:ready?f.pct+'%':'0%'}}/></div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ─── BAR CHART ─── */
+function BarChart(){
+  const [tip,setTip]=useState(null);
+  const days=Array.from({length:20},(_,i)=>'Nov '+(i+1));
+  return(
+    <>
+      <div className="bar-chart">
+        {BAR_DATA.map((h,i)=>(
+          <div key={i} className={'bc'+(i>=16?' hi':i>=12?' mid':'')} style={{height:h+'%'}}
+            onMouseEnter={e=>setTip({x:e.clientX,y:e.clientY,t:days[i]+' — '+h+'%'})}
+            onMouseMove={e=>setTip(s=>({...s,x:e.clientX,y:e.clientY}))}
+            onMouseLeave={()=>setTip(null)}
+          />
+        ))}
+      </div>
+      <div className="bar-labels"><span>Nov 1</span><span>Nov 8</span><span>Nov 15</span><span>Nov 20</span></div>
+      {tip&&<div className="tip on" style={{left:tip.x+12,top:tip.y-28}}>{tip.t}</div>}
+    </>
+  );
+}
+
+/* ─── DRAWER ─── */
+function Drawer({nav,setNav,onClose,onLogout}){
+  const ref=useRef(null);
+  useEffect(()=>{
+    const h=e=>{if(ref.current&&!ref.current.contains(e.target))onClose();};
+    document.addEventListener('mousedown',h);
+    return()=>document.removeEventListener('mousedown',h);
+  },[]);
+  const items=[['👤','Profile'],['⚙️','Account'],['🔑','API keys'],['💳','Billing']];
+  return(
+    <>
+      <div className="drawer-backdrop" onClick={onClose}/>
+      <div className="drawer" ref={ref}>
+        <div className="drawer-header">
+          <div className="logo" style={{fontFamily:'var(--font-d)',fontSize:16,fontWeight:800,color:'var(--ink)'}}>Nexo<span style={{color:'var(--fire)'}}>ra</span></div>
+          <button className="drawer-close" onClick={onClose}>×</button>
+        </div>
+        <div className="drawer-nav">
+          {NAV_ITEMS.map(n=>(
+            <button key={n.label} className={'drawer-btn'+(nav===n.label?' active':'')} onClick={()=>{setNav(n.label);onClose();}}>
+              <span className="d-ico">{n.ico}</span>{n.label}
+            </button>
+          ))}
+          <div style={{height:1,background:'var(--border)',margin:'8px 0'}}/>
+          {items.map(([ic,lb])=>(
+            <button key={lb} className="drawer-btn" onClick={onClose}><span className="d-ico" style={{fontSize:14}}>{ic}</span>{lb}</button>
+          ))}
+        </div>
+        <div className="drawer-footer">
+          <div className="drawer-user">
+            <div className="drawer-av">AL</div>
+            <div><div className="drawer-name">Alex Lima</div><div className="drawer-email">alex@nexora.io</div></div>
+          </div>
+          <button className="dd-item danger" style={{marginTop:4,borderRadius:'var(--r-md)',width:'100%'}} onClick={()=>{onClose();onLogout();}}>
+            <span style={{fontSize:14}}>→</span>Sign out
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+/* ─── USER DROPDOWN ─── */
+function UserDropdown({onClose,onLogout}){
+  const ref=useRef(null);
+  useEffect(()=>{
+    const h=e=>{if(ref.current&&!ref.current.contains(e.target))onClose();};
+    document.addEventListener('mousedown',h);
+    return()=>document.removeEventListener('mousedown',h);
+  },[]);
+  return(
+    <div className="user-dropdown" ref={ref}>
+      <div className="user-header">
+        <div className="user-av-lg">AL</div>
+        <div><div className="user-name">Alex Lima</div><div className="user-email">alex@nexora.io</div></div>
+      </div>
+      {[['👤','Profile settings'],['⚙️','Account settings'],['🔑','API keys'],['💳','Usage & billing']].map(([ic,lb])=>(
+        <button key={lb} className="dd-item" onClick={onClose}><span style={{fontSize:14}}>{ic}</span>{lb}</button>
+      ))}
+      <div className="dd-sep"/>
+      <button className="dd-item danger" onClick={onLogout}><span style={{fontSize:14}}>→</span>Sign out</button>
+    </div>
+  );
+}
+
+/* ─── UPGRADE MODAL ─── */
+function UpgradeModal({onClose}){
+  return(
+    <div className="overlay" onClick={e=>{if(e.target===e.currentTarget)onClose()}}>
+      <div className="modal upg-modal">
+        <div className="modal-hdr">
+          <div><div className="modal-ttl">Choose your plan</div><div className="modal-sub">Scale Nexora as your business grows.</div></div>
+          <button className="modal-close" onClick={onClose}>×</button>
+        </div>
+        <div className="plans-grid">
+          {PLANS.map(p=>(
+            <div key={p.name} className={'plan-card'+(p.featured?' featured':'')}>
+              {p.badge&&<div className="plan-badge">{p.badge}</div>}
+              <div className="plan-name">{p.name}</div>
+              <div className="plan-price">{p.price}<span>{p.per}</span></div>
+              <div className="plan-desc">{p.desc}</div>
+              <ul className="plan-feats">{p.features.map(f=><li key={f} className="plan-feat">{f}</li>)}</ul>
+              <button className={'plan-btn '+p.style}>{p.btn}</button>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── FEATURES MODAL ─── */
+function FeaturesModal({onClose}){
+  return(
+    <div className="overlay" onClick={e=>{if(e.target===e.currentTarget)onClose()}}>
+      <div className="modal feat-modal">
+        <div className="feat-hero">
+          <div className="feat-glow"/>
+          <button className="feat-close" onClick={onClose}>×</button>
+          <div className="feat-ttl">Everything you need to <em>grow</em></div>
+          <div className="feat-sub">Six capabilities that turn raw data into real decisions.</div>
+        </div>
+        <div className="feats-grid">
+          {FEATURES.map(f=>(
+            <div key={f.title} className="feat-item">
+              <div className="feat-icon" style={{background:f.bg}}>{f.icon}</div>
+              <div className="feat-item-ttl">{f.title}</div>
+              <div className="feat-item-desc">{f.desc}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── NOTIF MODAL ─── */
+function NotifModal({onClose}){
+  const [notifs,setNotifs]=useState(NOTIFS_INIT);
+  const markAll=()=>setNotifs(n=>n.map(i=>({...i,unread:false})));
+  return(
+    <div className="overlay" onClick={e=>{if(e.target===e.currentTarget)onClose()}}>
+      <div className="modal notif-modal">
+        <div className="modal-hdr" style={{padding:'20px 20px 12px'}}>
+          <div><div className="modal-ttl" style={{fontSize:18}}>Notifications</div><div className="modal-sub">{notifs.filter(n=>n.unread).length} unread</div></div>
+          <div style={{display:'flex',gap:8,alignItems:'center'}}>
+            <button onClick={markAll} style={{fontSize:11,color:'var(--fire)',border:'none',background:'transparent',cursor:'pointer',fontWeight:600,fontFamily:'var(--font-b)'}}>Mark all read</button>
+            <button className="modal-close" onClick={onClose}>×</button>
+          </div>
+        </div>
+        <div className="notif-list">
+          {notifs.map(n=>(
+            <div key={n.id} className={'notif-item'+(n.unread?' unread':'')} onClick={()=>setNotifs(ns=>ns.map(i=>i.id===n.id?{...i,unread:false}:i))}>
+              <span className={'n-dot'+(n.unread?' on':'')}/>
+              <div><div className="n-title">{n.title}</div><div className="n-desc">{n.desc}</div><div className="n-time">{n.time}</div></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── LOGOUT SCREEN ─── */
+function LogoutScreen({onBack}){
+  return(
+    <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'#0A0A0F',padding:24,position:'relative',overflow:'hidden'}}>
+      <div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',width:600,height:300,background:'radial-gradient(ellipse,rgba(255,75,31,.15) 0%,transparent 68%)',pointerEvents:'none'}}/>
+      <div style={{textAlign:'center',position:'relative',maxWidth:360,width:'100%',animation:'slideUp .4s cubic-bezier(.16,1,.3,1)'}}>
+        <div style={{width:68,height:68,borderRadius:'50%',background:'rgba(255,75,31,.1)',border:'1px solid rgba(255,75,31,.22)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 24px',fontSize:26}}>👋</div>
+        <div style={{fontFamily:'var(--font-d)',fontSize:32,fontWeight:800,color:'#fff',marginBottom:10,letterSpacing:'-.02em'}}>Goodbye, Alex</div>
+        <div style={{fontSize:14,color:'rgba(255,255,255,.36)',fontWeight:300,marginBottom:36,lineHeight:1.65}}>You've been signed out of Nexora.<br/>Your data is safe and waiting for you.</div>
+        <button onClick={onBack}
+          style={{background:'var(--fire)',color:'#fff',border:'none',borderRadius:'var(--r-md)',padding:'14px 0',fontFamily:'var(--font-d)',fontSize:14,fontWeight:700,cursor:'pointer',width:'100%',letterSpacing:'.02em'}}
+          onMouseEnter={e=>e.currentTarget.style.opacity='.88'}
+          onMouseLeave={e=>e.currentTarget.style.opacity='1'}>
+          Sign back in →
+        </button>
+        <div style={{marginTop:20,fontSize:12,color:'rgba(255,255,255,.18)'}}>nexora.io · 2024</div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── APP ─── */
+function App(){
+  const [nav,setNav]             = useState('Dashboard');
+  const [modal,setModal]         = useState(null);
+  const [showUser,setShowUser]   = useState(false);
+  const [showDrawer,setDrawer]   = useState(false);
+  const [loggedOut,setLoggedOut] = useState(false);
+  const [ringing,setRinging]     = useState(false);
+  const [unread]                 = useState(3);
+
+  const [rev,revRef] = useCounter(128,  v=>'$'+Math.round(v)+'K');
+  const [usr,usrRef] = useCounter(8421, v=>Math.round(v).toLocaleString());
+  const [cvr,cvrRef] = useCounter(4.38, v=>v.toFixed(2)+'%');
+  const [chr,chrRef] = useCounter(1.2,  v=>v.toFixed(1)+'%');
+
+  const openNotif=()=>{setRinging(true);setTimeout(()=>setRinging(false),700);setModal('notif');};
+  const doLogout=()=>{setShowUser(false);setLoggedOut(true);};
+
+  if(loggedOut) return <LogoutScreen onBack={()=>setLoggedOut(false)}/>;
+
+  return(
+    <>
+      <header className="topbar">
+        <div className="topbar-left">
+          <button className="hamburger" onClick={()=>setDrawer(true)} aria-label="Menu">
+            <span/><span/><span/>
+          </button>
+          <div className="logo">Nexo<span>ra</span></div>
+          <nav className="nav-links">
+            {NAV_ITEMS.map(n=>(
+              <button key={n.label} className={'nav-btn'+(nav===n.label?' active':'')} onClick={()=>setNav(n.label)}>{n.label}</button>
+            ))}
+          </nav>
+        </div>
+        <div className="topbar-right">
+          <button className={'icon-btn'+(ringing?' notif-ring':'')} onClick={openNotif} title="Notifications">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M7 1a4 4 0 0 1 4 4v2.5l1 1.5H2l1-1.5V5a4 4 0 0 1 4-4Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
+              <path d="M5.5 11a1.5 1.5 0 0 0 3 0" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+            </svg>
+            {unread>0&&<span className="notif-dot"/>}
+          </button>
+          <button className="upgrade-btn" onClick={()=>setModal('upgrade')}>Upgrade plan</button>
+          <div style={{position:'relative'}}>
+            <button className="avatar-btn" onClick={()=>setShowUser(v=>!v)}>AL</button>
+            {showUser&&<UserDropdown onClose={()=>setShowUser(false)} onLogout={doLogout}/>}
+          </div>
+        </div>
+      </header>
+
+      {showDrawer&&<Drawer nav={nav} setNav={setNav} onClose={()=>setDrawer(false)} onLogout={doLogout}/>}
+
+      <section className="hero-band">
+        <div className="hero-glow"/>
+        <div className="hero-badge"><span className="badge-dot"/>Q4 2024 — 38% more conversions</div>
+        <h1 className="hero-title">Your business,<br/><em>accelerated.</em></h1>
+        <p className="hero-sub">Real-time analytics that turn data into decisions.</p>
+        <div className="hero-btns">
+          <button className="hbtn-p">View full report →</button>
+          <button className="hbtn-g" onClick={()=>setModal('features')}>Explore features</button>
+        </div>
+      </section>
+
+      <div className="metrics-row">
+        <div className="metric" ref={revRef}>
+          <div className="metric-icon" style={{background:'rgba(255,75,31,.10)',color:'var(--fire)'}}>💰</div>
+          <div className="metric-label">Monthly revenue</div>
+          <div className="metric-val">{rev}</div>
+          <div className="metric-chg up">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M5 8V2M2 5l3-3 3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            12.4% vs last month
+          </div>
+        </div>
+        <div className="metric" ref={usrRef}>
+          <div className="metric-icon" style={{background:'rgba(28,110,255,.10)',color:'var(--blue)'}}>👥</div>
+          <div className="metric-label">Active users</div>
+          <div className="metric-val">{usr}</div>
+          <div className="metric-chg up">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M5 8V2M2 5l3-3 3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            8.1% vs last month
+          </div>
+        </div>
+        <div className="metric" ref={cvrRef}>
+          <div className="metric-icon" style={{background:'rgba(34,197,94,.10)',color:'var(--up)'}}>🎯</div>
+          <div className="metric-label">Conversion rate</div>
+          <div className="metric-val">{cvr}</div>
+          <div className="metric-chg up">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M5 8V2M2 5l3-3 3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            38% vs last month
+          </div>
+        </div>
+        <div className="metric" ref={chrRef}>
+          <div className="metric-icon" style={{background:'rgba(249,115,22,.10)',color:'var(--warn)'}}>📉</div>
+          <div className="metric-label">Churn rate</div>
+          <div className="metric-val">{chr}</div>
+          <div className="metric-chg dn">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style={{transform:'rotate(180deg)'}}><path d="M5 8V2M2 5l3-3 3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            22% vs last month
+          </div>
+        </div>
+      </div>
+
+      <div className="body-wrap">
+        <div className="col-left">
+          <div className="card"><div className="card-head"><span className="card-title">Conversion trend</span><span className="card-tag">Last 30 days</span></div><BarChart/></div>
+          <div className="card"><div className="card-head"><span className="card-title">Revenue over time</span><span className="card-tag">Last 6 months</span></div><LineChart/></div>
+          <div className="card"><div className="card-head"><span className="card-title">Onboarding funnel</span><span className="card-tag card-tag-green">−62% drop-off</span></div><Funnel/></div>
+        </div>
+        <div className="col-right">
+          <div className="kpi-grid">
+            <div className="kpi"><div className="kpi-label">Satisfaction</div><div className="kpi-val">4.8★</div><div className="kpi-sub up">↑ +0.6 pts</div></div>
+            <div className="kpi"><div className="kpi-label">Components</div><div className="kpi-val">80+</div><div className="kpi-sub" style={{color:'var(--muted)'}}>design system</div></div>
+            <div className="kpi"><div className="kpi-label">Trial → Paid</div><div className="kpi-val">2×</div><div className="kpi-sub up">vs old version</div></div>
+            <div className="kpi"><div className="kpi-label">Launch</div><div className="kpi-val">12 wk</div><div className="kpi-sub" style={{color:'var(--muted)'}}>kickoff → live</div></div>
+          </div>
+          <div className="card"><div className="card-head"><span className="card-title">Traffic segments</span></div><DonutChart/></div>
+          <div className="card">
+            <div className="card-head"><span className="card-title">Top pages</span><span className="card-tag">This month</span></div>
+            {PAGES.map(p=>(
+              <div className="page-row" key={p.rank}>
+                <span className="page-rank">{p.rank}</span>
+                <span className="page-name">{p.name}</span>
+                <span className="page-views">{p.views}</span>
+                <span className={'page-chg '+(p.up?'up':'dn')}>{p.chg}</span>
+              </div>
+            ))}
+          </div>
+          <div className="card">
+            <div className="card-head"><span className="card-title">Recent activity</span></div>
+            {ACTIVITY.map((a,i)=>(
+              <div className="act-row" key={i}>
+                <div className="act-ico" style={{background:a.bg,color:a.col}}>{a.ico}</div>
+                <div><div className="act-title">{a.title}</div><div className="act-time">{a.time}</div></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="bnav-spacer"/>
+
+      <nav className="bottom-nav">
+        <div className="bottom-nav-inner">
+          {NAV_ITEMS.map(n=>(
+            <button key={n.label} className={'bnav-btn'+(nav===n.label?' active':'')} onClick={()=>setNav(n.label)}>
+              {n.ico}
+              <span className="bnav-label">{n.label}</span>
+            </button>
+          ))}
+          <button className="bnav-btn" onClick={openNotif} style={{position:'relative'}}>
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path d="M9 1.5a5 5 0 0 1 5 5v3l1.5 2H2.5L4 9.5v-3a5 5 0 0 1 5-5Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/>
+              <path d="M7 14a2 2 0 0 0 4 0" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+            </svg>
+            {unread>0&&<span style={{position:'absolute',top:4,right:'calc(50% - 12px)',width:7,height:7,borderRadius:'50%',background:'var(--fire)',border:'2px solid var(--white)'}}/>}
+            <span className="bnav-label">Alerts</span>
+          </button>
+        </div>
+      </nav>
+
+      {modal==='upgrade'  && <UpgradeModal  onClose={()=>setModal(null)}/>}
+      {modal==='features' && <FeaturesModal onClose={()=>setModal(null)}/>}
+      {modal==='notif'    && <NotifModal    onClose={()=>setModal(null)}/>}
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
